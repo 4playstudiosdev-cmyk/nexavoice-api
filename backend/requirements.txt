@@ -5,3 +5,7 @@ python-dotenv==1.0.1
 requests==2.31.0
 websockets==12.0
 gTTS==2.5.1
+
+# FIX COMPATIBILITY
+httpx==0.27.0
+pydantic==2.6.4
