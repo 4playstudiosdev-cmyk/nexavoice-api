@@ -1,0 +1,11 @@
+# Backend
+backend/.env
+backend/__pycache__/
+backend/*.pyc
+
+# Frontend
+node_modules/
+
+# Global
+.env
+.vscode/

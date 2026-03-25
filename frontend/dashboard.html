@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - NexaVoice AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col">
+
+    <!-- Topbar -->
+    <nav class="bg-white p-4 shadow-sm border-b border-slate-200">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="index.html" class="text-xl font-bold text-blue-600 flex items-center">
+                <i class="fas fa-wave-square mr-2"></i> NexaVoice App
+            </a>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-slate-500">Credits: <strong class="text-slate-800">100 mins</strong></span>
+                <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">U</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 container mx-auto mt-8 px-4 grid lg:grid-cols-2 gap-8 pb-8">
+        
+        <!-- Left: Configuration Form -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-fit">
+            <h2 class="text-2xl font-bold mb-1">Create New Agent</h2>
+            <p class="text-slate-500 mb-6 text-sm">Define your AI's personality and knowledge.</p>
+
+            <form id="agentForm" class="space-y-5">
+                <div>
+                    <label for="agentType" class="block text-sm font-semibold text-slate-700 mb-1">Use Case</label>
+                    <select id="agentType" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                        <option value="customer_care">Customer Support (e.g., Billing, Complaints)</option>
+                        <option value="food_order">Order Taking (e.g., Restaurants, Delivery)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="companyName" class="block text-sm font-semibold text-slate-700 mb-1">Company Name</label>
+                    <input type="text" id="companyName" placeholder="e.g., K-Electric or KFC" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label for="agentData" class="block text-sm font-semibold text-slate-700 mb-1">Knowledge Base (Instructions & Data)</label>
+                    <textarea id="agentData" rows="6" placeholder="Enter your menu items, prices, or company policies here..." class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-blue-600/30">
+                    <i class="fas fa-bolt mr-2"></i> Deploy Agent
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Simulator / Preview -->
+        <div class="bg-slate-900 text-white p-8 rounded-2xl flex flex-col items-center justify-center border border-slate-800 relative overflow-hidden shadow-2xl">
+            
+            <!-- Setup State -->
+            <div id="setupState" class="text-center relative z-10">
+                <div class="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center text-4xl text-slate-600 mx-auto mb-6">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3 class="text-2xl font-bold">Simulator</h3>
+                <p class="text-slate-400 mt-2 max-w-xs mx-auto">Configure your agent on the left to start a test call.</p>
+            </div>
+
+            <!-- Active State -->
+            <div id="activeState" class="hidden text-center w-full relative z-10">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div id="micRipple" class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20 hidden"></div>
+                    <div class="absolute inset-2 bg-blue-500 rounded-full animate-pulse opacity-40"></div>
+                    <div id="micIcon" class="absolute inset-4 bg-white rounded-full flex items-center justify-center text-blue-600 text-4xl shadow-[0_0_30px_rgba(59,130,246,0.5)] z-10">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                </div>
+                
+                <h3 class="text-3xl font-bold mb-1" id="displayAgentName">Agent</h3>
+                <div class="inline-flex items-center bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30 mb-8">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span> Ongoing Call
+                </div>
+                
+                <div class="bg-slate-800/80 backdrop-blur-sm p-5 rounded-xl text-left border border-slate-700 w-full max-w-md mx-auto mb-8">
+                    <div class="text-[10px] text-blue-400 uppercase font-bold tracking-widest mb-2">Live Transcript:</div>
+                    <div id="chatHistory" class="text-sm text-slate-300 font-mono leading-relaxed h-32 overflow-y-auto flex flex-col gap-2">
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-6">
+                    <button id="startCallBtn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition transform hover:scale-105">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button type="button" id="endCallBtn" class="hidden bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition transform hover:scale-105">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                </div>
+                <p id="callStatus" class="text-slate-400 mt-4 text-sm font-semibold">Ready to connect...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION: Set your backend address here
+        const BACKEND_DOMAIN = "localhost:8080"; 
+        const API_URL = `http://${BACKEND_DOMAIN}/api/create_agent`;
+        const WS_URL = `ws://${BACKEND_DOMAIN}/ws/`;
+
+        let currentAgentId = null;
+        let ws = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioContext, analyser, microphone, silenceTimer;
+        let isAgentSpeaking = false;
+        window.currentAudio = null;
+
+        // UI Elements
+        const chatHistory = document.getElementById('chatHistory');
+        const startCallBtn = document.getElementById('startCallBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const callStatus = document.getElementById('callStatus');
+        const micIcon = document.getElementById('micIcon');
+        const micRipple = document.getElementById('micRipple');
+
+        function appendToChat(role, text) {
+            const color = role === 'You' ? 'text-blue-400' : 'text-green-400';
+            chatHistory.innerHTML += `<div><strong class="${color}">${role}:</strong> ${text}</div>`;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        document.getElementById('agentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const company_name = document.getElementById('companyName').value;
+            const use_case = document.getElementById('agentType').value;
+            const knowledge_base = document.getElementById('agentData').value;
+
+            if(!company_name || !knowledge_base) { alert("Please fill all fields"); return; }
+
+            document.getElementById('setupState').classList.add('hidden');
+            document.getElementById('activeState').classList.remove('hidden');
+            document.getElementById('displayAgentName').innerText = company_name;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ company_name, use_case, knowledge_base })
+                });
+                const result = await response.json();
+                currentAgentId = result.agent_id;
+            } catch (error) {
+                callStatus.innerText = "Connection Failed!";
+                callStatus.classList.add('text-red-500');
+            }
+        });
+
+        async function startListening() {
+            if (isAgentSpeaking) return;
+
+            try {
+                if(!mediaRecorder) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                    
+                    audioContext = new AudioContext();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 512;
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        if(audioChunks.length === 0) return;
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            const base64data = reader.result.split(',')[1];
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: "audio_chunk", audio: base64data }));
+                            }
+                        };
+                    };
+                }
+
+                audioChunks = [];
+                mediaRecorder.start();
+                micIcon.classList.replace('text-blue-600', 'text-green-500');
+                micRipple.classList.remove('hidden');
+                callStatus.innerText = "Listening...";
+                detectSilence();
+            } catch (err) {
+                console.error("Mic Error:", err);
+            }
+        }
+
+        function detectSilence() {
+            if(!mediaRecorder || mediaRecorder.state !== "recording") return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+            let average = sum / bufferLength;
+
+            // INTERRUPT LOGIC: If user starts speaking while AI is speaking
+            if (average > 25) { 
+                if (isAgentSpeaking && window.currentAudio) {
+                    window.currentAudio.pause();
+                    window.currentAudio.currentTime = 0;
+                    isAgentSpeaking = false;
+                    ws.send(JSON.stringify({ type: "interrupt" }));
+                    appendToChat("System", "Interrupting AI...");
+                }
+
+                clearTimeout(silenceTimer);
+                // Send audio after 1.5s of silence
+                silenceTimer = setTimeout(() => {
+                    if(mediaRecorder && mediaRecorder.state === "recording") {
+                        mediaRecorder.stop();
+                        micIcon.classList.replace('text-green-500', 'text-slate-400');
+                        micRipple.classList.add('hidden');
+                        callStatus.innerText = "Processing...";
+                    }
+                }, 1500); 
+            }
+            requestAnimationFrame(detectSilence);
+        }
+
+        startCallBtn.addEventListener('click', function() {
+            if(!currentAgentId) return;
+
+            ws = new WebSocket(`${WS_URL}${currentAgentId}`);
+
+            ws.onopen = () => {
+                startCallBtn.classList.add('hidden');
+                endCallBtn.classList.remove('hidden');
+                ws.send(JSON.stringify({ type: "start_call" }));
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                
+                if (msg.type === "status") {
+                    callStatus.innerText = msg.text;
+                } 
+                else if (msg.type === "agent_message") {
+                    appendToChat("Agent", msg.text);
+                    isAgentSpeaking = true;
+                    
+                    if(mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+
+                    if (msg.audio) {
+                        window.currentAudio = new Audio("data:audio/mp3;base64," + msg.audio);
+                        window.currentAudio.play();
+                        window.currentAudio.onended = () => {
+                            isAgentSpeaking = false;
+                            startListening();
+                        };
+                    } else {
+                        isAgentSpeaking = false;
+                        startListening();
+                    }
+                }
+                else if (msg.type === "user_message") {
+                    appendToChat("You", msg.text);
+                }
+            };
+        });
+
+        function endCall() {
+            if (ws) ws.close();
+            if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            if (audioContext) audioContext.close();
+            if (window.currentAudio) window.currentAudio.pause();
+            
+            mediaRecorder = null;
+            document.getElementById('setupState').classList.remove('hidden');
+            document.getElementById('activeState').classList.add('hidden');
+            startCallBtn.classList.remove('hidden');
+            endCallBtn.classList.add('hidden');
+            currentAgentId = null;
+        }
+
+        endCallBtn.addEventListener('click', endCall);
+    </script>
+</body>
+</html>
