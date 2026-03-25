@@ -11,14 +11,17 @@ import aiohttp
 from groq import Groq
 from dotenv import load_dotenv
 from gtts import gTTS
+import os
 
+port = int(os.environ.get("PORT", 5000))
+app.run(host="0.0.0.0", port=port)
 load_dotenv()
 
 # Cloud Deployment settings
 PORT = int(os.environ.get("PORT", 8080))
 
 # API Keys
-GROQ_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_KEY = os.getenv("GROQ_API_KEY")
 ELEVEN_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVEN_VOICE = os.environ.get("ELEVENLABS_VOICE_ID", "ON8VbOMsYaufJcoM")
 
