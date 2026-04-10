@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PORT         = int(os.environ.get("PORT", 8080))
-GROQ_KEY     = os.getenv("GROQ_API_KEY")
-ELEVEN_KEY   = os.getenv("ELEVENLABS_API_KEY")
-SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+GROQ_KEY     = (os.getenv("GROQ_API_KEY") or "").strip()
+ELEVEN_KEY   = (os.getenv("ELEVENLABS_API_KEY") or "").strip() or None
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip() or None
 SMTP_HOST    = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT    = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER    = os.getenv("SMTP_USER")
@@ -73,81 +73,113 @@ def transcribe(audio_bytes, lang_code=None):
         print(f"STT Groq err: {e}"); return None
 
 # ── TTS ──────────────────────────────────────────────────────
+# edge-tts is BLOCKED on Railway (Microsoft 403 on cloud IPs)
+# PRIMARY: gTTS (Google) — works everywhere, free, no IP restrictions
+# LOCAL BONUS: edge-tts — works on your PC only (faster, better quality)
+# PAID OPTION: ElevenLabs — for Urdu/Arabic high quality
+
+try:
+    from gtts import gTTS
+    HAS_GTTS = True
+    print("TTS gTTS (Google) ready!")
+except Exception:
+    HAS_GTTS = False
+    print("WARNING: pip install gtts")
+
 try:
     import edge_tts
     HAS_EDGE = True
-    print("TTS edge-tts ready!")
+    print("TTS edge-tts also available (local only)")
 except Exception:
     HAS_EDGE = False
-    print("pip install edge-tts")
 
-async def _edge(text, voice, lbl):
+GTTS_LANG = {"English": "en", "Urdu": "ur", "Arabic": "ar"}
+
+async def _gtts_speak(text: str, language: str) -> str | None:
+    """Google TTS — free, works on Railway, no IP blocks"""
+    if not HAS_GTTS or not text.strip():
+        return None
+    try:
+        t = time.time()
+        lang_code = GTTS_LANG.get(language, "en")
+        loop = asyncio.get_event_loop()
+        def _run():
+            tts = gTTS(text=text.strip(), lang=lang_code, slow=False)
+            buf = io.BytesIO()
+            tts.write_to_fp(buf)
+            buf.seek(0)
+            return buf.read()
+        data = await loop.run_in_executor(None, _run)
+        if not data:
+            return None
+        b64 = base64.b64encode(data).decode()
+        print(f"TTS-gTTS {int((time.time()-t)*1000)}ms [{language}]")
+        return b64
+    except Exception as e:
+        print(f"TTS-gTTS error: {e}")
+        return None
+
+async def _edge_speak(text: str, voice: str, lbl: str) -> str | None:
+    """edge-tts — great quality but blocked on Railway cloud IPs"""
     if not HAS_EDGE or not text.strip():
         return None
-    # Retry up to 3 times — Railway network can be flaky to Microsoft servers
-    for attempt in range(3):
-        try:
-            t = time.time()
-            comm = edge_tts.Communicate(text.strip(), voice=voice, rate="+15%")
-            buf = io.BytesIO()
-            async for c in comm.stream():
-                if c["type"] == "audio":
-                    buf.write(c["data"])
-            buf.seek(0); data = buf.read()
-            if not data:
-                print(f"TTS-{lbl} edge-tts returned empty audio (attempt {attempt+1})")
-                await asyncio.sleep(0.2)
-                continue
-            b64 = base64.b64encode(data).decode()
-            print(f"TTS-{lbl} edge-tts OK {int((time.time()-t)*1000)}ms bytes={len(data)} b64_start={b64[:6]}")
-            return b64
-        except Exception as e:
-            print(f"TTS-{lbl} edge-tts attempt {attempt+1} failed: {e}")
-            await asyncio.sleep(0.3)
-    print(f"TTS-{lbl} edge-tts FAILED after 3 attempts")
-    return None
+    try:
+        t = time.time()
+        comm = edge_tts.Communicate(text.strip(), voice=voice, rate="+10%")
+        buf = io.BytesIO()
+        async for c in comm.stream():
+            if c["type"] == "audio":
+                buf.write(c["data"])
+        buf.seek(0); data = buf.read()
+        if not data:
+            return None
+        print(f"TTS-{lbl} edge-tts {int((time.time()-t)*1000)}ms")
+        return base64.b64encode(data).decode()
+    except Exception as e:
+        print(f"TTS-{lbl} edge-tts blocked: {str(e)[:60]}")
+        return None
 
-async def _eleven(text, voice_id, lbl):
+async def _eleven_speak(text: str, voice_id: str, lbl: str) -> str | None:
+    """ElevenLabs — paid, highest quality for Urdu/Arabic"""
     if not ELEVEN_KEY or not text.strip():
         return None
     try:
         t = time.time()
         async with httpx.AsyncClient(timeout=15) as h:
             r = await h.post(
-                f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream",
-                json={"text": text.strip(), "model_id": "eleven_flash_v2_5",
-                      "voice_settings": {"stability": 0.5, "similarity_boost": 0.7,
-                                         "style": 0.0, "use_speaker_boost": False}},
-                headers={"xi-api-key": ELEVEN_KEY,
-                         "Content-Type": "application/json", "Accept": "audio/mpeg"})
-        if r.status_code == 200:
-            print(f"TTS-{lbl} {int((time.time()-t)*1000)}ms ElevenLabs Flash")
-            return base64.b64encode(r.content).decode()
-        # fallback to multilingual
-        async with httpx.AsyncClient(timeout=15) as h:
-            r = await h.post(
                 f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
                 json={"text": text.strip(), "model_id": "eleven_multilingual_v2",
-                      "voice_settings": {"stability": 0.55, "similarity_boost": 0.75,
-                                         "style": 0.0, "use_speaker_boost": False}},
+                      "voice_settings": {"stability": 0.55, "similarity_boost": 0.75}},
                 headers={"xi-api-key": ELEVEN_KEY,
                          "Content-Type": "application/json", "Accept": "audio/mpeg"})
         if r.status_code == 200:
-            print(f"TTS-{lbl} {int((time.time()-t)*1000)}ms ElevenLabs v2")
+            print(f"TTS-{lbl} ElevenLabs {int((time.time()-t)*1000)}ms")
             return base64.b64encode(r.content).decode()
-        print(f"ElevenLabs {r.status_code}: {r.text[:100]}")
+        print(f"ElevenLabs {r.status_code}: {r.text[:80]}")
         return None
     except Exception as e:
-        print(f"TTS-{lbl} err: {e}"); return None
+        print(f"TTS-{lbl} ElevenLabs err: {e}")
+        return None
 
-async def speak(text, language="English"):
+async def speak(text: str, language: str = "English") -> str | None:
+    """
+    TTS router:
+    - English:  edge-tts (local/fast) OR gTTS (Railway/cloud)
+    - Urdu:     ElevenLabs OR gTTS
+    - Arabic:   ElevenLabs OR gTTS
+    gTTS always works. edge-tts only works on your local PC.
+    """
     if not text or not text.strip():
         return None
     if language == "Urdu":
-        return await _eleven(text, ELEVEN_VOICE_UR, "UR") or await _edge(text, "ur-PK-UzmaNeural", "UR-fb")
+        return (await _eleven_speak(text, ELEVEN_VOICE_UR, "UR")
+                or await _gtts_speak(text, "Urdu"))
     if language == "Arabic":
-        return await _eleven(text, ELEVEN_VOICE_AR, "AR") or await _edge(text, "ar-SA-HamedNeural", "AR-fb")
-    return await _edge(text, "en-US-GuyNeural", "EN")
+        return (await _eleven_speak(text, ELEVEN_VOICE_AR, "AR")
+                or await _gtts_speak(text, "Arabic"))
+    # English — try edge-tts first (better quality), fallback to gTTS
+    return (await _edge_speak(text, "en-US-GuyNeural", "EN")
+            or await _gtts_speak(text, "English"))
 
 # ── SUPABASE ─────────────────────────────────────────────────
 async def db_insert(table, data):
@@ -550,67 +582,56 @@ async def pipeline(ws, session, audio_bytes):
     if len(history) > 7:
         history[1:] = history[-6:]
 
-    t_llm = time.time(); buf = ""; full = ""; first = True
-    split = re.compile(r'(?<=[.!?])\s+|(?<=[,])\s+')
+    t_llm = time.time()
+    full_response = ""
 
-    # Groq production models — April 2026 (auto-fallback on any API error)
-    # openai/gpt-oss-20b     = 1000 t/sec  fastest
-    # llama-3.1-8b-instant   =  560 t/sec  reliable free tier
-    # llama-3.3-70b-versatile =  280 t/sec  most capable
+    # ── STEP 1: Get full LLM response (don't stream-split, just get complete reply)
+    # This avoids the sentence-split bug where short replies never trigger TTS
     models = ["openai/gpt-oss-20b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    llm_success = False
 
     for model in models:
         try:
-            stream = client.chat.completions.create(
-                messages=history, model=model,
-                max_tokens=40,        # 40 tokens = ~30 words, enough for short voice replies
-                temperature=0.1,      # near-zero = instant deterministic output
-                stream=True)
-            for chunk in stream:
-                if not session["processing"]: break
-                d = chunk.choices[0].delta.content
-                if not d: continue
-                buf += d; full += d
-                parts = split.split(buf)
-                if len(parts) > 1:
-                    to_speak = " ".join(parts[:-1]).strip(); buf = parts[-1]
-                    if to_speak:
-                        if first:
-                            print(f"LLM first {int((time.time()-t_llm)*1000)}ms [{model}]")
-                        audio = await speak(to_speak, lang)
-                        if audio and session["processing"]:
-                            await ws.send_json({"type": "agent_message", "text": to_speak,
-                                                "audio": audio, "is_first": first})
-                            if first:
-                                print(f"First audio {int((time.time()-t0)*1000)}ms")
-                                first = False
-            if buf.strip() and session["processing"]:
-                audio = await speak(buf.strip(), lang)
-                await ws.send_json({"type": "agent_message", "text": buf.strip(),
-                                    "audio": audio, "is_first": first})
-            history.append({"role": "assistant", "content": full.strip()})
-            print(f"Done {int((time.time()-t0)*1000)}ms")
-            break  # success — exit model loop
-
+            resp = client.chat.completions.create(
+                messages=history,
+                model=model,
+                max_tokens=60,       # enough for 1-2 sentences
+                temperature=0.1,
+                stream=False)        # non-streaming = simpler, no split bugs
+            full_response = resp.choices[0].message.content.strip()
+            print(f"LLM {int((time.time()-t_llm)*1000)}ms [{model}] -> {repr(full_response[:60])}")
+            llm_success = True
+            break
         except Exception as e:
             err = str(e).lower()
-            # Try next model for: rate limits, decommissioned, 400, 404, any API error
-            skip_codes = ["rate", "429", "limit", "decommission", "deprecated",
-                          "not found", "invalid_request", "400", "404", "model"]
-            if any(code in err for code in skip_codes):
-                print(f"Model {model} unavailable ({str(e)[:60]}), trying next...")
-                await asyncio.sleep(0.05)
-                buf = ""; full = ""; first = True
+            skip = ["rate","429","limit","decommission","deprecated",
+                    "not_found","invalid_request","400","404","model","error"]
+            if any(c in err for c in skip):
+                print(f"Model {model} failed: {str(e)[:80]}, trying next...")
+                await asyncio.sleep(0.1)
                 continue
-            print(f"Pipeline err [{model}]: {e}")
+            print(f"LLM hard error [{model}]: {e}")
             break
-    else:
-        # All models exhausted — send fallback so frontend re-enables mic
-        fallback = "Sorry, I had a connection issue. Please repeat that."
-        audio = await speak(fallback, lang)
-        await ws.send_json({"type": "agent_message", "text": fallback,
+
+    if not llm_success or not full_response:
+        full_response = "Sorry, I had a brief issue. Could you repeat that please?"
+        print("All LLM models failed — using fallback response")
+
+    # ── STEP 2: Generate audio for the response
+    audio = await speak(full_response, lang)
+
+    # ── STEP 3: Send text + audio (ALWAYS send text even if audio fails)
+    if audio:
+        await ws.send_json({"type": "agent_message", "text": full_response,
                             "audio": audio, "is_first": True})
-        history.append({"role": "assistant", "content": fallback})
+        print(f"Done {int((time.time()-t0)*1000)}ms total")
+    else:
+        # No audio — send text only so frontend shows message and re-enables mic
+        print(f"TTS failed — sending text-only response")
+        await ws.send_json({"type": "agent_message", "text": full_response,
+                            "audio": None, "is_first": True})
+
+    history.append({"role": "assistant", "content": full_response})
 
 async def handle_language(ws, session, text):
     try:
@@ -825,7 +846,7 @@ if __name__ == "__main__":
     print("  NexaVoice v8.1  SPEED OPTIMIZED")
     print("=" * 52)
     print(f"  STT  : {stt_s}")
-    print(f"  EN   : edge-tts +15% rate [OK]")
+    print(f"  TTS  : gTTS(Google) + edge-tts(local) + ElevenLabs")
     print(f"  UR/AR: {ur_s}")
     print(f"  LLM  : gpt-oss-20b -> 8b-instant -> 70b [OK]")
     print(f"  DB   : {db_s}")
