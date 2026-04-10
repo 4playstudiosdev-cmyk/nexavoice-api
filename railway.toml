@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python backend/main_server.py"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10

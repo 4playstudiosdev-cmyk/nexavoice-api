@@ -1,293 +1,432 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - NexaVoice AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col">
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NexaVoice</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--s1:#0E0E1A;--s2:#131325;--bd:#1A1A30;--tx:#E2E2F0;--mu:#5A5A78;--ac:#5B8DEF;--gr:#1FD07A;--re:#FF4757;--ye:#FFB830;--or:#FF6B35;--pi:#E91E8C;--go:#FFD700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(91,141,239,.07),transparent);pointer-events:none;z-index:0}
+nav{position:sticky;top:0;z-index:100;background:rgba(8,8,16,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+.logo{font-weight:900;font-size:17px;display:flex;align-items:center;gap:8px}
+.ld{width:7px;height:7px;background:var(--ac);border-radius:50%;animation:pulse 2s infinite}
+.pill{display:flex;align-items:center;gap:5px;background:rgba(31,208,122,.1);border:1px solid rgba(31,208,122,.2);color:var(--gr);padding:4px 11px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:10px}
+.pd{width:5px;height:5px;background:var(--gr);border-radius:50%;animation:pulse 2s infinite}
+.tabs{display:flex;border-bottom:1px solid var(--bd);padding:0 22px;background:var(--s1)}
+.tab{padding:11px 18px;font-size:13px;font-weight:600;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.a{color:var(--tx);border-bottom-color:var(--ac)}
+.main{position:relative;z-index:1;padding:18px 22px;max-width:1380px;margin:0 auto}
+.two{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:13px;padding:18px}
+.ct{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.ac{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.ac::after{content:'';position:absolute;inset:0;background:var(--cc,#5B8DEF);opacity:0;transition:opacity .2s}
+.ac:hover::after{opacity:.05}.ac.sel::after{opacity:.1}
+.ac.sel{border-color:var(--cc,#5B8DEF);box-shadow:0 0 0 1px var(--cc,#5B8DEF)}
+.ac.full{grid-column:1/-1}
+.aci{position:relative;z-index:1}
+.ack{position:absolute;top:7px;right:7px;width:15px;height:15px;border-radius:50%;background:var(--cc,#5B8DEF);display:none;align-items:center;justify-content:center;font-size:8px;z-index:2;color:#fff}
+.ac.sel .ack{display:flex}
+label{display:block;font-size:11px;font-weight:600;color:var(--mu);margin-bottom:5px;letter-spacing:.3px}
+input,textarea{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;color:var(--tx);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:border-color .2s;margin-bottom:11px}
+input:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,141,239,.1)}
+textarea{resize:none;line-height:1.5}
+#cr{display:none}
+.bd{width:100%;background:var(--ac);color:#fff;border:none;border-radius:9px;padding:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(91,141,239,.22)}
+.bd:hover{background:#6B9DF0;transform:translateY(-1px)}
+.lr{display:flex;gap:5px;margin-top:12px}
+.lb{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid var(--bd);color:var(--mu)}
+.lb.on{border-color:var(--gr);color:var(--gr);background:rgba(31,208,122,.07)}
+.sim{background:var(--s1);border:1px solid var(--bd);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;min-height:540px}
+.sh{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.si{display:flex;align-items:center;gap:9px}
+.sic{width:32px;height:32px;border-radius:8px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:15px}
+.idle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
+.iico{width:60px;height:60px;border-radius:14px;background:var(--s2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px}
+.act{flex:1;display:none;flex-direction:column;padding:18px}
+.mw{display:flex;flex-direction:column;align-items:center;margin-bottom:14px}
+.mo{position:relative;width:84px;height:84px;margin-bottom:9px}
+.mr{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--ac);opacity:0;display:none}
+.mr.r1{animation:ripple 1.8s ease-out infinite}.mr.r2{animation:ripple 1.8s ease-out .5s infinite}
+.mb{width:84px;height:84px;border-radius:50%;background:var(--s2);border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:30px;position:relative;z-index:1;transition:all .3s}
+.mb.li{background:rgba(91,141,239,.15);border-color:var(--ac);box-shadow:0 0 28px rgba(91,141,239,.2)}
+.mb.sp{background:rgba(31,208,122,.1);border-color:var(--gr);box-shadow:0 0 28px rgba(31,208,122,.15)}
+.ms{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mu)}
+.tr{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px;overflow-y:auto;margin-bottom:12px;min-height:130px;max-height:170px}
+.tl{padding:4px 0;font-size:12px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.03)}
+.tl:last-child{border:none}
+.tro{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-right:4px}
+.tro.y{color:var(--ac)}.tro.a{color:var(--gr)}.tro.s{color:var(--ye)}
+.cr2{display:flex;gap:7px}
+.bc{flex:1;padding:10px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.bg{background:rgba(31,208,122,.12);border:1px solid rgba(31,208,122,.25);color:var(--gr)}
+.bg:hover{background:rgba(31,208,122,.2)}
+.br2{background:rgba(255,71,87,.12);border:1px solid rgba(255,71,87,.25);color:var(--re);display:none}
+.br2:hover{background:rgba(255,71,87,.2)}
+.sr{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:14px}
+.sb{background:var(--s1);border:1px solid var(--bd);border-radius:9px;padding:11px}
+.sl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px}
+.sv{font-weight:800;font-size:19px}
+.sg{color:var(--gr)}.sa{color:var(--ac)}.sy{color:var(--ye)}
+/* DASHBOARD */
+.dp{display:none}.dp.a{display:block}
+.sg2{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px}
+.sc{background:var(--s1);border:1px solid var(--bd);border-radius:11px;padding:14px}
+.scn{font-weight:900;font-size:26px;margin-bottom:2px}
+.scl{font-size:10px;color:var(--mu)}
+.at{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.atp{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--bd);color:var(--mu);cursor:pointer;transition:all .2s}
+.atp.a{border-color:var(--ac);color:var(--ac);background:rgba(91,141,239,.08)}
+.ot{width:100%;border-collapse:collapse;font-size:12px}
+.ot th{padding:9px 11px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--mu);border-bottom:1px solid var(--bd);font-weight:500}
+.ot td{padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
+.ot tr:last-child td{border:none}
+.ot tr:hover td{background:rgba(255,255,255,.02)}
+.bx{display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.bg2{background:rgba(31,208,122,.12);color:var(--gr);border:1px solid rgba(31,208,122,.2)}
+.by{background:rgba(255,184,48,.12);color:var(--ye);border:1px solid rgba(255,184,48,.2)}
+.bb{background:rgba(91,141,239,.12);color:var(--ac);border:1px solid rgba(91,141,239,.2)}
+.brd{background:rgba(255,71,87,.12);color:var(--re);border:1px solid rgba(255,71,87,.2)}
+.bgr{background:rgba(90,90,120,.15);color:var(--mu);border:1px solid var(--bd)}
+.empty{text-align:center;padding:50px;color:var(--mu)}
+.mo2{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.mo2.open{display:flex}
+.md{background:var(--s1);border:1px solid var(--bd);border-radius:15px;max-width:620px;width:100%;max-height:84vh;overflow-y:auto;padding:22px}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.mc{background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.mc:hover{background:var(--s2);color:var(--tx)}
+.kv{width:100%;margin-bottom:14px}
+.kv td{padding:5px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04)}
+.kv td:first-child{color:var(--mu);width:45%;font-size:11px}
+.kv td:last-child{font-weight:600}
+.ts{background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:11px;max-height:180px;overflow-y:auto;font-size:12px;line-height:1.7}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes ripple{0%{transform:scale(.8);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fi .22s ease forwards}
+</style></head><body>
+<nav>
+  <div class="logo"><div class="ld"></div>NexaVoice</div>
+  <div style="display:flex;align-items:center;gap:9px">
+    <div id="gpuB" class="pill" style="display:none"><div class="pd"></div><span id="gpuT">...</span></div>
+    <div class="pill"><div class="pd"></div>v8 · 3 LANG · 6 AGENTS</div>
+  </div>
+</nav>
+<div class="tabs">
+  <div class="tab a" onclick="showTab('sim',this)">🎙️ Simulator</div>
+  <div class="tab" onclick="showTab('dash',this)">📊 Dashboard</div>
+</div>
 
-    <!-- Topbar -->
-    <nav class="bg-white p-4 shadow-sm border-b border-slate-200">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="index.html" class="text-xl font-bold text-blue-600 flex items-center">
-                <i class="fas fa-wave-square mr-2"></i> NexaVoice App
-            </a>
-            <div class="flex items-center gap-4">
-                <span class="text-sm text-slate-500">Credits: <strong class="text-slate-800">100 mins</strong></span>
-                <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">U</div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Workspace -->
-    <div class="flex-1 container mx-auto mt-8 px-4 grid lg:grid-cols-2 gap-8 pb-8">
-        
-        <!-- Left: Configuration Form -->
-        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-fit">
-            <h2 class="text-2xl font-bold mb-1">Create New Agent</h2>
-            <p class="text-slate-500 mb-6 text-sm">Define your AI's personality and knowledge.</p>
-
-            <form id="agentForm" class="space-y-5">
-                <div>
-                    <label for="agentType" class="block text-sm font-semibold text-slate-700 mb-1">Use Case</label>
-                    <select id="agentType" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
-                        <option value="customer_care">Customer Support (e.g., Billing, Complaints)</option>
-                        <option value="food_order">Order Taking (e.g., Restaurants, Delivery)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="companyName" class="block text-sm font-semibold text-slate-700 mb-1">Company Name</label>
-                    <input type="text" id="companyName" placeholder="e.g., K-Electric or KFC" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
-                </div>
-                <div>
-                    <label for="agentData" class="block text-sm font-semibold text-slate-700 mb-1">Knowledge Base (Instructions & Data)</label>
-                    <textarea id="agentData" rows="6" placeholder="Enter your menu items, prices, or company policies here..." class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-blue-600/30">
-                    <i class="fas fa-bolt mr-2"></i> Deploy Agent
-                </button>
-            </form>
-        </div>
-
-        <!-- Right: Simulator / Preview -->
-        <div class="bg-slate-900 text-white p-8 rounded-2xl flex flex-col items-center justify-center border border-slate-800 relative overflow-hidden shadow-2xl">
-            
-            <!-- Setup State -->
-            <div id="setupState" class="text-center relative z-10">
-                <div class="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center text-4xl text-slate-600 mx-auto mb-6">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <h3 class="text-2xl font-bold">Simulator</h3>
-                <p class="text-slate-400 mt-2 max-w-xs mx-auto">Configure your agent on the left to start a test call.</p>
-            </div>
-
-            <!-- Active State -->
-            <div id="activeState" class="hidden text-center w-full relative z-10">
-                <div class="relative w-32 h-32 mx-auto mb-6">
-                    <div id="micRipple" class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20 hidden"></div>
-                    <div class="absolute inset-2 bg-blue-500 rounded-full animate-pulse opacity-40"></div>
-                    <div id="micIcon" class="absolute inset-4 bg-white rounded-full flex items-center justify-center text-blue-600 text-4xl shadow-[0_0_30px_rgba(59,130,246,0.5)] z-10">
-                        <i class="fas fa-microphone"></i>
-                    </div>
-                </div>
-                
-                <h3 class="text-3xl font-bold mb-1" id="displayAgentName">Agent</h3>
-                <div class="inline-flex items-center bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30 mb-8">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span> Ongoing Call
-                </div>
-                
-                <div class="bg-slate-800/80 backdrop-blur-sm p-5 rounded-xl text-left border border-slate-700 w-full max-w-md mx-auto mb-8">
-                    <div class="text-[10px] text-blue-400 uppercase font-bold tracking-widest mb-2">Live Transcript:</div>
-                    <div id="chatHistory" class="text-sm text-slate-300 font-mono leading-relaxed h-32 overflow-y-auto flex flex-col gap-2">
-                    </div>
-                </div>
-
-                <div class="flex justify-center gap-6">
-                    <button id="startCallBtn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition transform hover:scale-105">
-                        <i class="fas fa-phone"></i>
-                    </button>
-                    <button type="button" id="endCallBtn" class="hidden bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition transform hover:scale-105">
-                        <i class="fas fa-phone-slash"></i>
-                    </button>
-                </div>
-                <p id="callStatus" class="text-slate-400 mt-4 text-sm font-semibold">Ready to connect...</p>
-            </div>
-        </div>
+<!-- SIMULATOR -->
+<div id="simP" class="dp a">
+<div class="main"><div class="two">
+  <div>
+    <div class="card">
+      <div class="ct">01 — Select Agent</div>
+      <div class="ag" id="agG"></div>
+      <div id="cr"><label>Company Name</label><input id="cname" placeholder="e.g. Meezan Bank..."></div>
+      <label>Extra Knowledge <span style="color:var(--mu);font-size:10px">(optional)</span></label>
+      <textarea id="kb" rows="4" placeholder="Paste menu, FAQ, policies..."></textarea>
+      <button class="bd" onclick="deploy()">⚡ Deploy Agent</button>
+      <div class="lr">
+        <div class="lb on">🇬🇧 English</div><div class="lb on">🇵🇰 Urdu</div><div class="lb on">🇸🇦 Arabic</div>
+      </div>
     </div>
+    <div class="sr">
+      <div class="sb"><div class="sl">Latency</div><div class="sv sg" id="sL">—</div></div>
+      <div class="sb"><div class="sl">Turns</div><div class="sv sa" id="sT">0</div></div>
+      <div class="sb"><div class="sl">Language</div><div class="sv sy" id="sLg">—</div></div>
+    </div>
+  </div>
+  <div class="sim">
+    <div class="sh">
+      <div class="si"><div class="sic" id="sIco">🤖</div><div><div style="font-weight:700;font-size:13px" id="sN">No Agent</div><div style="font-size:11px;color:var(--mu)" id="sTy">Deploy an agent first</div></div></div>
+      <div class="pill" id="liveB" style="display:none"><div class="pd"></div>LIVE</div>
+    </div>
+    <div class="idle" id="idle">
+      <div class="iico">🎙️</div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:5px">Simulator Ready</div>
+      <div style="font-size:12px;color:var(--mu)">Deploy an agent then press Call</div>
+    </div>
+    <div class="act" id="aact">
+      <div class="mw">
+        <div class="mo"><div class="mr r1" id="r1"></div><div class="mr r2" id="r2"></div><div class="mb" id="mBtn">🎙️</div></div>
+        <div class="ms" id="mSt">READY</div>
+      </div>
+      <div class="tr" id="chat"></div>
+      <div class="cr2">
+        <button class="bc bg" id="sBtn" onclick="startCall()">📞 Start Call</button>
+        <button class="bc br2" id="eBtn" onclick="endCall()">📵 End Call</button>
+      </div>
+    </div>
+  </div>
+</div></div></div>
 
-    <script>
-        // CONFIGURATION: Set your backend address here
-        const BACKEND_DOMAIN = "localhost:8080"; 
-        const API_URL = `http://${BACKEND_DOMAIN}/api/create_agent`;
-        const WS_URL = `ws://${BACKEND_DOMAIN}/ws/`;
+<!-- DASHBOARD -->
+<div id="dashP" class="dp">
+<div class="main">
+  <div class="sg2">
+    <div class="sc"><div class="scn sa" id="dTo">0</div><div class="scl">Total Calls</div></div>
+    <div class="sc"><div class="scn sg" id="dRe">0</div><div class="scl">Resolved</div></div>
+    <div class="sc"><div class="scn sy" id="dPo">0</div><div class="scl">Positive</div></div>
+    <div class="sc"><div class="scn" style="color:var(--pi)" id="dOr">0</div><div class="scl">Restaurant Orders</div></div>
+  </div>
+  <div class="at">
+    <div class="atp a" onclick="filterCalls('',this)">All</div>
+    <div class="atp" onclick="filterCalls('restaurant',this)">🍔 Restaurant</div>
+    <div class="atp" onclick="filterCalls('kelectric',this)">⚡ K-Electric</div>
+    <div class="atp" onclick="filterCalls('loanapp',this)">💰 Loan</div>
+    <div class="atp" onclick="filterCalls('telecom',this)">📡 Telecom</div>
+    <div class="atp" onclick="filterCalls('sales',this)">🧠 Sales</div>
+    <div class="atp" onclick="filterCalls('custom',this)">🤖 Custom</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
+      <div class="ct" style="margin:0">Live Call Records</div>
+      <button onclick="loadCalls()" style="background:var(--s2);border:1px solid var(--bd);color:var(--tx);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-family:'Outfit',sans-serif;font-weight:600">↻ Refresh</button>
+    </div>
+    <div id="tbl" style="overflow-x:auto"><div class="empty">📊 Loading...</div></div>
+  </div>
+</div></div>
 
-        let currentAgentId = null;
-        let ws = null;
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let audioContext, analyser, microphone, silenceTimer;
-        let isAgentSpeaking = false;
-        window.currentAudio = null;
+<!-- MODAL -->
+<div class="mo2" id="modal"><div class="md" id="mdc"></div></div>
 
-        // UI Elements
-        const chatHistory = document.getElementById('chatHistory');
-        const startCallBtn = document.getElementById('startCallBtn');
-        const endCallBtn = document.getElementById('endCallBtn');
-        const callStatus = document.getElementById('callStatus');
-        const micIcon = document.getElementById('micIcon');
-        const micRipple = document.getElementById('micRipple');
+<script>
+const HOST=window.location.host,SEC=location.protocol==='https:';
+const HTTP=SEC?'https':'http',WS=SEC?'wss':'ws';
+const HDR={'ngrok-skip-browser-warning':'true'};
+const $=id=>document.getElementById(id);
 
-        function appendToChat(role, text) {
-            const color = role === 'You' ? 'text-blue-400' : 'text-green-400';
-            chatHistory.innerHTML += `<div><strong class="${color}">${role}:</strong> ${text}</div>`;
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
+const AGENTS={
+  restaurant:{icon:'🍔',name:'Restaurant',color:'#FF6B35',desc:'Orders, delivery & pickup'},
+  kelectric:{icon:'⚡',name:'K-Electric',color:'#0066CC',desc:'Power & billing complaints'},
+  loanapp:{icon:'💰',name:'CashEasy Loan',color:'#00A651',desc:'Recovery & verification'},
+  telecom:{icon:'📡',name:'Telecom',color:'#E91E8C',desc:'Balance, packages & SIM'},
+  sales:{icon:'🧠',name:'Sales Agent',color:'#FFD700',desc:'Human-like conversion'},
+  custom:{icon:'🤖',name:'Custom',color:'#7C3AED',desc:'Your own knowledge base'},
+};
 
-        document.getElementById('agentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const company_name = document.getElementById('companyName').value;
-            const use_case = document.getElementById('agentType').value;
-            const knowledge_base = document.getElementById('agentData').value;
+let sel='restaurant',agentId=null,ws=null,rec=null;
+let chunks=[],actx,analy,sTimer,agSpk=false,aQ=[],playing=false,curA=null;
+let turns=0,t0=0,allCalls=[],filterType='';
 
-            if(!company_name || !knowledge_base) { alert("Please fill all fields"); return; }
+function showTab(t,el){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('a'));
+  el.classList.add('a');
+  $('simP').classList.toggle('a',t==='sim');
+  $('dashP').classList.toggle('a',t==='dash');
+  if(t==='dash') loadCalls();
+}
 
-            document.getElementById('setupState').classList.add('hidden');
-            document.getElementById('activeState').classList.remove('hidden');
-            document.getElementById('displayAgentName').innerText = company_name;
+function buildGrid(){
+  const g=$('agG');g.innerHTML='';
+  Object.entries(AGENTS).forEach(([k,ag])=>{
+    const d=document.createElement('div');
+    d.className='ac'+(k==='custom'?' full':'');
+    d.id='ac_'+k;d.style.setProperty('--cc',ag.color);d.onclick=()=>selAgent(k);
+    d.innerHTML=`<div class="ack">✓</div><div class="aci"><div style="font-size:19px;margin-bottom:3px">${ag.icon}</div><div style="font-weight:700;font-size:12px">${ag.name}</div><div style="font-size:10px;color:var(--mu);margin-top:1px">${ag.desc}</div></div>`;
+    g.appendChild(d);
+  });
+  selAgent('restaurant');
+}
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ company_name, use_case, knowledge_base })
-                });
-                const result = await response.json();
-                currentAgentId = result.agent_id;
-            } catch (error) {
-                callStatus.innerText = "Connection Failed!";
-                callStatus.classList.add('text-red-500');
-            }
-        });
+function selAgent(k){
+  sel=k;
+  document.querySelectorAll('.ac').forEach(c=>c.classList.remove('sel'));
+  const c=$('ac_'+k);if(c){c.classList.add('sel');c.style.setProperty('--cc',AGENTS[k].color);}
+  $('cr').style.display=k==='custom'?'block':'none';
+}
 
-        async function startListening() {
-            if (isAgentSpeaking) return;
+async function checkHealth(){
+  try{
+    const r=await fetch(`${HTTP}://${HOST}/health`,{headers:HDR});
+    const d=await r.json();
+    $('gpuB').style.display='flex';
+    $('gpuT').innerText=`STT:${d.gpu_stt?'GPU⚡':'API'} DB:${d.supabase?'✅':'⚠️'}`;
+  }catch(e){}
+}
 
-            try {
-                if(!mediaRecorder) {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                    
-                    audioContext = new AudioContext();
-                    analyser = audioContext.createAnalyser();
-                    microphone = audioContext.createMediaStreamSource(stream);
-                    microphone.connect(analyser);
-                    analyser.fftSize = 512;
-                    
-                    mediaRecorder.ondataavailable = event => {
-                        if (event.data.size > 0) audioChunks.push(event.data);
-                    };
+async function deploy(){
+  const kb=$('kb').value.trim(),cn=$('cname').value.trim(),ag=AGENTS[sel];
+  if(sel==='custom'&&!cn){alert('Enter company name!');return;}
+  $('sIco').innerText=ag.icon;$('sN').innerText=sel==='custom'?cn:ag.name;$('sTy').innerText=ag.desc;
+  setStat('DEPLOYING...','');
+  try{
+    const r=await fetch(`${HTTP}://${HOST}/api/create_agent`,{method:'POST',headers:{'Content-Type':'application/json',...HDR},
+      body:JSON.stringify({agent_type:sel,company_name:cn,knowledge_base:kb})});
+    const d=await r.json();agentId=d.agent_id;
+    $('idle').style.display='none';$('aact').style.display='flex';$('liveB').style.display='flex';
+    setStat('READY — PRESS CALL','');turns=0;$('sT').innerText='0';$('sLg').innerText='—';$('sL').innerText='—';
+  }catch(e){setStat('❌ BACKEND OFFLINE','color:var(--re)');}
+}
 
-                    mediaRecorder.onstop = () => {
-                        if(audioChunks.length === 0) return;
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        audioChunks = [];
-                        
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
-                        reader.onloadend = () => {
-                            const base64data = reader.result.split(',')[1];
-                            if (ws && ws.readyState === WebSocket.OPEN) {
-                                ws.send(JSON.stringify({ type: "audio_chunk", audio: base64data }));
-                            }
-                        };
-                    };
-                }
+async function playNext(){
+  if(playing||aQ.length===0)return;
+  playing=true;agSpk=true;setStat('SPEAKING...','color:var(--gr)');$('mBtn').className='mb sp';
+  while(aQ.length>0){
+    const{b64}=aQ.shift();const isW=b64.startsWith('UklG');
+    curA=new Audio(`data:${isW?'audio/wav':'audio/mp3'};base64,${b64}`);
+    await new Promise(r=>{curA.onended=r;curA.onerror=r;curA.play().catch(r);});
+    if(!agSpk)break;
+  }
+  playing=false;agSpk=false;aQ=[];$('mBtn').className='mb';startListen();
+}
 
-                audioChunks = [];
-                mediaRecorder.start();
-                micIcon.classList.replace('text-blue-600', 'text-green-500');
-                micRipple.classList.remove('hidden');
-                callStatus.innerText = "Listening...";
-                detectSilence();
-            } catch (err) {
-                console.error("Mic Error:", err);
-            }
-        }
+function stopAudio(){if(curA){curA.pause();curA=null;}aQ=[];playing=false;agSpk=false;$('mBtn').className='mb';sr();}
 
-        function detectSilence() {
-            if(!mediaRecorder || mediaRecorder.state !== "recording") return;
+function addChat(role,text){
+  const b=$('chat'),d=document.createElement('div');d.className='tl fi';
+  const cls=role==='You'?'y':role==='Agent'?'a':'s';
+  d.innerHTML=`<span class="tro ${cls}">${role}</span>${text}`;b.appendChild(d);b.scrollTop=b.scrollHeight;
+}
 
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
+function setStat(t,st=''){$('mSt').innerText=t;$('mSt').style.cssText=st;}
+function sr2(){$('r1').style.display='block';$('r2').style.display='block';}
+function sr(){$('r1').style.display='none';$('r2').style.display='none';}
 
-            let sum = 0;
-            for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-            let average = sum / bufferLength;
+async function startListen(){
+  if(agSpk)return;
+  try{
+    if(!rec){
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4';
+      rec=new MediaRecorder(stream,{mimeType:mime});
+      actx=new AudioContext();analy=actx.createAnalyser();actx.createMediaStreamSource(stream).connect(analy);analy.fftSize=512;
+      rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+      rec.onstop=()=>{
+        if(!chunks.length)return;
+        const blob=new Blob(chunks,{type:rec.mimeType});chunks=[];
+        const rd=new FileReader();rd.readAsDataURL(blob);
+        rd.onloadend=()=>{if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'audio_chunk',audio:rd.result.split(',')[1]}));};
+      };
+    }
+    chunks=[];rec.start(100);$('mBtn').className='mb li';sr2();setStat('LISTENING...','color:var(--ac)');detSilence();
+  }catch(e){setStat('❌ MIC DENIED','color:var(--re)');}
+}
 
-            // INTERRUPT LOGIC: If user starts speaking while AI is speaking
-            if (average > 25) { 
-                if (isAgentSpeaking && window.currentAudio) {
-                    window.currentAudio.pause();
-                    window.currentAudio.currentTime = 0;
-                    isAgentSpeaking = false;
-                    ws.send(JSON.stringify({ type: "interrupt" }));
-                    appendToChat("System", "Interrupting AI...");
-                }
+function detSilence(){
+  if(!rec||rec.state!=='recording')return;
+  const buf=new Uint8Array(analy.frequencyBinCount);analy.getByteFrequencyData(buf);
+  const avg=buf.reduce((a,b)=>a+b,0)/buf.length;
+  if(avg>18){
+    if(agSpk){stopAudio();if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'interrupt'}));addChat('Sys','⚡ Interrupted');}
+    clearTimeout(sTimer);
+    sTimer=setTimeout(()=>{
+      if(rec&&rec.state==='recording'){t0=performance.now();rec.stop();$('mBtn').className='mb';sr();setStat('PROCESSING...','color:var(--ye)');}
+    },900);
+  }
+  requestAnimationFrame(detSilence);
+}
 
-                clearTimeout(silenceTimer);
-                // Send audio after 1.5s of silence
-                silenceTimer = setTimeout(() => {
-                    if(mediaRecorder && mediaRecorder.state === "recording") {
-                        mediaRecorder.stop();
-                        micIcon.classList.replace('text-green-500', 'text-slate-400');
-                        micRipple.classList.add('hidden');
-                        callStatus.innerText = "Processing...";
-                    }
-                }, 1500); 
-            }
-            requestAnimationFrame(detectSilence);
-        }
+function startCall(){
+  if(!agentId){alert('Deploy an agent first!');return;}
+  ws=new WebSocket(`${WS}://${HOST}/ws/${agentId}`);
+  ws.onopen=()=>{$('sBtn').style.display='none';$('eBtn').style.display='flex';ws.send(JSON.stringify({type:'start_call'}));};
+  ws.onmessage=ev=>{
+    const m=JSON.parse(ev.data);
+    if(m.type==='user_message'){addChat('You',m.text);setStat('THINKING...','color:var(--ye)');turns++;$('sT').innerText=turns;$('sL').innerText=Math.round(performance.now()-t0)+'ms';}
+    else if(m.type==='agent_message'){
+      if(m.is_first||m.is_first===undefined){addChat('Agent',m.text);$('sLg').innerText=/[\u0600-\u06FF]/.test(m.text)?'🇸🇦 AR':'🇬🇧 EN';}
+      if(m.audio){aQ.push({b64:m.audio});playNext();}
+    }
+  };
+  ws.onerror=()=>setStat('❌ WS ERROR','color:var(--re)');
+  ws.onclose=()=>{setStat('CALL ENDED','');$('sBtn').style.display='flex';$('eBtn').style.display='none';$('liveB').style.display='none';sr();};
+}
 
-        startCallBtn.addEventListener('click', function() {
-            if(!currentAgentId) return;
+function endCall(){
+  if(ws)ws.close();if(rec&&rec.state!=='inactive')rec.stop();if(actx)actx.close().catch(()=>{});
+  stopAudio();rec=null;actx=null;
+  $('idle').style.display='flex';$('aact').style.display='none';$('liveB').style.display='none';
+  $('sBtn').style.display='flex';$('eBtn').style.display='none';$('chat').innerHTML='';agentId=null;
+}
 
-            ws = new WebSocket(`${WS_URL}${currentAgentId}`);
+// DASHBOARD
+async function loadCalls(){
+  try{
+    const url=filterType?`${HTTP}://${HOST}/api/calls?agent_type=${filterType}`:`${HTTP}://${HOST}/api/calls`;
+    const r=await fetch(url,{headers:HDR});const d=await r.json();
+    allCalls=d.calls||[];renderCalls(allCalls);updateSum(allCalls);
+  }catch(e){$('tbl').innerHTML=`<div class="empty">❌ ${e.message}</div>`;}
+}
 
-            ws.onopen = () => {
-                startCallBtn.classList.add('hidden');
-                endCallBtn.classList.remove('hidden');
-                ws.send(JSON.stringify({ type: "start_call" }));
-            };
+function filterCalls(type,el){
+  filterType=type;document.querySelectorAll('.atp').forEach(x=>x.classList.remove('a'));el.classList.add('a');loadCalls();
+}
 
-            ws.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                
-                if (msg.type === "status") {
-                    callStatus.innerText = msg.text;
-                } 
-                else if (msg.type === "agent_message") {
-                    appendToChat("Agent", msg.text);
-                    isAgentSpeaking = true;
-                    
-                    if(mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+function updateSum(calls){
+  const done=calls.filter(c=>c.ended_at);
+  $('dTo').innerText=done.length;$('dRe').innerText=done.filter(c=>c.resolved).length;
+  $('dPo').innerText=done.filter(c=>c.sentiment==='positive').length;
+  $('dOr').innerText=done.filter(c=>c.agent_type==='restaurant').length;
+}
 
-                    if (msg.audio) {
-                        window.currentAudio = new Audio("data:audio/mp3;base64," + msg.audio);
-                        window.currentAudio.play();
-                        window.currentAudio.onended = () => {
-                            isAgentSpeaking = false;
-                            startListening();
-                        };
-                    } else {
-                        isAgentSpeaking = false;
-                        startListening();
-                    }
-                }
-                else if (msg.type === "user_message") {
-                    appendToChat("You", msg.text);
-                }
-            };
-        });
+const sem=s=>({positive:'<span class="bx bg2">😊 positive</span>',neutral:'<span class="bx by">😐 neutral</span>',negative:'<span class="bx brd">😤 negative</span>'}[s]||'<span class="bx bgr">—</span>');
+const lf=l=>({English:'🇬🇧',Urdu:'🇵🇰',Arabic:'🇸🇦'}[l]||'🌐');
+const aic=t=>({restaurant:'🍔',kelectric:'⚡',loanapp:'💰',telecom:'📡',sales:'🧠',custom:'🤖'}[t]||'🤖');
+const ft=iso=>{if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});};
+function gk(obj,...keys){for(const k of keys)if(obj&&obj[k]!=null&&obj[k]!=='')return obj[k];return null;}
 
-        function endCall() {
-            if (ws) ws.close();
-            if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-            if (audioContext) audioContext.close();
-            if (window.currentAudio) window.currentAudio.pause();
-            
-            mediaRecorder = null;
-            document.getElementById('setupState').classList.remove('hidden');
-            document.getElementById('activeState').classList.add('hidden');
-            startCallBtn.classList.remove('hidden');
-            endCallBtn.classList.add('hidden');
-            currentAgentId = null;
-        }
+function getKeyData(c){
+  const ext=typeof c.extracted_data==='string'?JSON.parse(c.extracted_data||'{}'):(c.extracted_data||{});
+  let p=[];
+  if(c.agent_type==='restaurant'){
+    const ot=gk(ext,'order_type'),tot=gk(ext,'total'),addr=gk(ext,'address'),ph=gk(ext,'phone'),items=gk(ext,'items','items_ordered');
+    if(ot)p.push(`<span class="bx bb">${ot}</span>`);
+    if(tot)p.push(`<b style="color:var(--gr)">Rs.${tot}</b>`);
+    if(addr)p.push(`📍${addr}`);if(ph)p.push(`📱${ph}`);
+    if(items&&Array.isArray(items)&&items.length)p.push(`🍽️ ${items.map(i=>typeof i==='string'?i:i.name||JSON.stringify(i)).join(', ')}`);
+  }else if(c.agent_type==='kelectric'){
+    const ref=gk(ext,'complaint_id','reference_number'),iss=gk(ext,'issue','complaint_type'),area=gk(ext,'area');
+    if(ref)p.push(`<span class="bx by">${ref}</span>`);if(iss)p.push(iss);if(area)p.push(`📍${area}`);
+  }else if(c.agent_type==='loanapp'){
+    const int=gk(ext,'intent','call_purpose'),amt=gk(ext,'loan_amount'),risk=gk(ext,'risk_level'),out=gk(ext,'response','outcome');
+    if(int)p.push(`<span class="bx bb">${int}</span>`);if(amt)p.push(`Rs.${amt}`);if(risk)p.push(`Risk:<b>${risk}</b>`);if(out)p.push(out);
+  }else if(c.agent_type==='telecom'){
+    const int=gk(ext,'intent'),pkg=gk(ext,'package_name','package_type'),ph=gk(ext,'phone'),st=gk(ext,'status');
+    if(int)p.push(`<span class="bx bb">${int}</span>`);if(pkg)p.push(`📦${pkg}`);if(ph)p.push(`📱${ph}`);if(st)p.push(st);
+  }else if(c.agent_type==='sales'){
+    const prod=gk(ext,'product'),lvl=gk(ext,'interest_level'),st=gk(ext,'final_status'),obj=gk(ext,'objection');
+    if(prod)p.push(`🎯${prod}`);if(lvl)p.push(`Interest:<b>${lvl}</b>`);
+    if(st)p.push(`<span class="bx ${st==='converted'?'bg2':'by'}">${st}</span>`);if(obj)p.push(`Obj:${obj}`);
+  }else{
+    const t=gk(ext,'main_topic','action_taken');p.push(t||(c.summary?c.summary.slice(0,70)+'...':'—'));
+  }
+  return p.join('<br>')||'—';
+}
 
-        endCallBtn.addEventListener('click', endCall);
-    </script>
-</body>
-</html>
+function renderCalls(calls){
+  if(!calls||!calls.length){$('tbl').innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:10px">📞</div>No calls yet. Deploy an agent and start talking!</div>';return;}
+  const rows=calls.map(c=>{
+    const rb=c.resolved?'<span class="bx bg2">✅ Resolved</span>':(c.ended_at?'<span class="bx by">⚠️ Open</span>':'<span class="bx bgr">🔄 Live</span>');
+    return `<tr onclick="showDetail('${c.id}')" style="cursor:pointer"><td><b>${aic(c.agent_type)} ${c.agent_name||'—'}</b></td><td>${lf(c.language)} ${c.language||'—'}</td><td>${getKeyData(c)}</td><td>${sem(c.sentiment)}</td><td>${rb}</td><td style="color:var(--mu);font-size:11px">${ft(c.started_at)}</td><td><span class="bx bb">${c.turn_count||0} turns</span></td></tr>`;
+  }).join('');
+  $('tbl').innerHTML=`<table class="ot"><thead><tr><th>Agent</th><th>Language</th><th>Key Data</th><th>Sentiment</th><th>Status</th><th>Time</th><th>Turns</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function showDetail(id){
+  const c=allCalls.find(x=>x.id===id);if(!c)return;
+  const ext=typeof c.extracted_data==='string'?JSON.parse(c.extracted_data||'{}'):(c.extracted_data||{});
+  const acts=typeof c.key_actions==='string'?JSON.parse(c.key_actions||'[]'):(c.key_actions||[]);
+  const trans=typeof c.transcript==='string'?JSON.parse(c.transcript||'[]'):(c.transcript||[]);
+  const extRows=Object.entries(ext).filter(([,v])=>v!=null&&v!==''&&v!==false&&!(Array.isArray(v)&&!v.length))
+    .map(([k,v])=>`<tr><td>${k.replace(/_/g,' ')}</td><td>${Array.isArray(v)?v.map(i=>typeof i==='object'?JSON.stringify(i):i).join(', '):String(v)}</td></tr>`).join('');
+  const transH=trans.filter(m=>m.role!=='system').map(m=>`<div style="margin-bottom:5px"><span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;color:${m.role==='user'?'var(--ac)':'var(--gr)'}">${m.role==='user'?'You':'Agent'}: </span>${m.content}</div>`).join('');
+  $('mdc').innerHTML=`
+    <div class="mh"><div><div style="font-weight:800;font-size:15px">${aic(c.agent_type)} ${c.agent_name}</div><div style="font-size:11px;color:var(--mu);margin-top:2px">${ft(c.started_at)} · ${lf(c.language)} ${c.language}</div></div><button class="mc" onclick="closeModal()">✕</button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px">${[['Sentiment',sem(c.sentiment)],['Status',c.resolved?'<span class="bx bg2">✅ Resolved</span>':'<span class="bx by">⚠️ Open</span>'],['Turns',`<span class="bx bb">${c.turn_count||0}</span>`]].map(([l,v])=>`<div style="background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:9px"><div style="font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">${l}</div>${v}</div>`).join('')}</div>
+    ${c.summary?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Summary</div><div style="background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:11px;font-size:13px;line-height:1.7;margin-bottom:12px">${c.summary}</div>`:''}
+    ${extRows?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Extracted Data</div><table class="kv" style="margin-bottom:12px">${extRows}</table>`:''}
+    ${acts.length?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Key Actions</div><ul style="padding-left:14px;margin-bottom:12px">${acts.map(a=>`<li style="font-size:12px;margin-bottom:3px">${a}</li>`).join('')}</ul>`:''}
+    ${transH?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Transcript</div><div class="ts">${transH}</div>`:''}`;
+  $('modal').classList.add('open');
+}
+function closeModal(){$('modal').classList.remove('open');}
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
+
+buildGrid();checkHealth();
+setInterval(()=>{if($('dashP').classList.contains('a'))loadCalls();},30000);
+</script></body></html>

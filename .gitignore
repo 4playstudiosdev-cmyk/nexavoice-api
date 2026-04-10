@@ -1,11 +1,36 @@
-# Backend
-backend/.env
-backend/__pycache__/
-backend/*.pyc
-
-# Frontend
-node_modules/
-
-# Global
+# Environment - NEVER commit this
 .env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# GPU/CUDA stuff - not needed on Railway
+*.cu
+*.cuh
+
+# Temp audio files
+*.webm
+*.wav
+*.mp3
+tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
 .vscode/
+.idea/
+
+# Logs
+*.log
