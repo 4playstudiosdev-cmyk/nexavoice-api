@@ -604,18 +604,21 @@ async def pipeline(ws, session, audio_bytes):
             break
         except Exception as e:
             err = str(e).lower()
-            skip = ["rate","429","limit","decommission","deprecated",
-                    "not_found","invalid_request","400","404","model","error"]
-            if any(c in err for c in skip):
-                print(f"Model {model} failed: {str(e)[:80]}, trying next...")
+            # Only retry on specific retriable errors — NOT generic "error"
+            retriable = ["rate_limit","rate limit","429","decommission",
+                         "deprecated","model_not_found","model_decommissioned"]
+            is_retriable = any(c in err for c in retriable)
+            print(f"LLM [{model}] error (retriable={is_retriable}): {str(e)[:100]}")
+            if is_retriable:
                 await asyncio.sleep(0.1)
                 continue
-            print(f"LLM hard error [{model}]: {e}")
-            break
+            # Non-retriable error — still try next model (don't give up)
+            await asyncio.sleep(0.05)
+            continue
 
     if not llm_success or not full_response:
-        full_response = "Sorry, I had a brief issue. Could you repeat that please?"
-        print("All LLM models failed — using fallback response")
+        full_response = "I understand. Could you please share your account number so I can help you?"
+        print(f"WARNING: All LLM models failed for lang={lang} history_len={len(history)}")
 
     # ── STEP 2: Generate audio for the response
     audio = await speak(full_response, lang)
