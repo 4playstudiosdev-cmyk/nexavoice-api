@@ -161,13 +161,15 @@ async def _eleven_speak(text: str, voice_id: str, lbl: str) -> str | None:
         print(f"TTS-{lbl} ElevenLabs err: {e}")
         return None
 
+# Detect if running on Railway/cloud — skip edge-tts which is always blocked there
+IS_CLOUD = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RENDER")
+                or os.getenv("FLY_APP_NAME") or os.getenv("DYNO"))
+
 async def speak(text: str, language: str = "English") -> str | None:
     """
-    TTS router:
-    - English:  edge-tts (local/fast) OR gTTS (Railway/cloud)
-    - Urdu:     ElevenLabs OR gTTS
-    - Arabic:   ElevenLabs OR gTTS
-    gTTS always works. edge-tts only works on your local PC.
+    TTS router — auto-detects cloud vs local:
+    CLOUD (Railway): gTTS always, ElevenLabs for Urdu/Arabic
+    LOCAL (your PC):  edge-tts fast, ElevenLabs for Urdu/Arabic
     """
     if not text or not text.strip():
         return None
@@ -177,7 +179,11 @@ async def speak(text: str, language: str = "English") -> str | None:
     if language == "Arabic":
         return (await _eleven_speak(text, ELEVEN_VOICE_AR, "AR")
                 or await _gtts_speak(text, "Arabic"))
-    # English — try edge-tts first (better quality), fallback to gTTS
+    # English
+    if IS_CLOUD:
+        # Skip edge-tts on cloud — it's always blocked (403)
+        return await _gtts_speak(text, "English")
+    # Local PC — edge-tts is fast and high quality
     return (await _edge_speak(text, "en-US-GuyNeural", "EN")
             or await _gtts_speak(text, "English"))
 
@@ -578,8 +584,9 @@ async def pipeline(ws, session, audio_bytes):
     history = session["history"]
     history.append({"role": "user", "content": text})
 
-    # Keep only last 6 turns — minimum context = maximum speed
-    if len(history) > 7:
+    # Keep system prompt (index 0) + last 6 turns
+    # NEVER touch index 0 — that is the system prompt, removing it breaks the agent
+    if len(history) > 8:
         history[1:] = history[-6:]
 
     t_llm = time.time()
@@ -600,6 +607,10 @@ async def pipeline(ws, session, audio_bytes):
                 stream=False)        # non-streaming = simpler, no split bugs
             full_response = resp.choices[0].message.content.strip()
             print(f"LLM {int((time.time()-t_llm)*1000)}ms [{model}] -> {repr(full_response[:60])}")
+            if not full_response:
+                print(f"LLM [{model}] returned empty — trying next model")
+                await asyncio.sleep(0.05)
+                continue
             llm_success = True
             break
         except Exception as e:
@@ -851,7 +862,9 @@ if __name__ == "__main__":
     print(f"  STT  : {stt_s}")
     print(f"  TTS  : gTTS(Google) + edge-tts(local) + ElevenLabs")
     print(f"  UR/AR: {ur_s}")
+    cloud_s = "Railway/Cloud" if IS_CLOUD else "Local PC"
     print(f"  LLM  : gpt-oss-20b -> 8b-instant -> 70b [OK]")
+    print(f"  MODE : {cloud_s} (edge-tts: {'skip' if IS_CLOUD else 'enabled'})")
     print(f"  DB   : {db_s}")
     print(f"  Mail : {mail_s}")
     print(f"  Port : {PORT}")
