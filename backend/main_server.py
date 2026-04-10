@@ -84,19 +84,28 @@ except Exception:
 async def _edge(text, voice, lbl):
     if not HAS_EDGE or not text.strip():
         return None
-    try:
-        comm = edge_tts.Communicate(text.strip(), voice=voice, rate="+15%")
-        buf = io.BytesIO()
-        async for c in comm.stream():
-            if c["type"] == "audio":
-                buf.write(c["data"])
-        buf.seek(0); data = buf.read()
-        if not data:
-            return None
-        print(f"TTS-{lbl} edge-tts")
-        return base64.b64encode(data).decode()
-    except Exception as e:
-        print(f"TTS-{lbl} err: {e}"); return None
+    # Retry up to 3 times — Railway network can be flaky to Microsoft servers
+    for attempt in range(3):
+        try:
+            t = time.time()
+            comm = edge_tts.Communicate(text.strip(), voice=voice, rate="+15%")
+            buf = io.BytesIO()
+            async for c in comm.stream():
+                if c["type"] == "audio":
+                    buf.write(c["data"])
+            buf.seek(0); data = buf.read()
+            if not data:
+                print(f"TTS-{lbl} edge-tts returned empty audio (attempt {attempt+1})")
+                await asyncio.sleep(0.2)
+                continue
+            b64 = base64.b64encode(data).decode()
+            print(f"TTS-{lbl} edge-tts OK {int((time.time()-t)*1000)}ms bytes={len(data)} b64_start={b64[:6]}")
+            return b64
+        except Exception as e:
+            print(f"TTS-{lbl} edge-tts attempt {attempt+1} failed: {e}")
+            await asyncio.sleep(0.3)
+    print(f"TTS-{lbl} edge-tts FAILED after 3 attempts")
+    return None
 
 async def _eleven(text, voice_id, lbl):
     if not ELEVEN_KEY or not text.strip():

@@ -263,16 +263,36 @@ async function deploy(){
   }catch(e){setStat('❌ BACKEND OFFLINE','color:var(--re)');}
 }
 
+function getAudioMime(b64){
+  // Detect audio type from base64 magic bytes
+  if(b64.startsWith('UklG')) return 'audio/wav';   // RIFF WAV
+  if(b64.startsWith('SUQz')) return 'audio/mpeg';   // ID3 MP3
+  if(b64.startsWith('//uQ')) return 'audio/mpeg';   // MP3 no ID3
+  if(b64.startsWith('//vQ')) return 'audio/mpeg';   // MP3 variant
+  if(b64.startsWith('AAAA')) return 'audio/aac';    // AAC
+  if(b64.startsWith('T2dn')) return 'audio/ogg';    // OGG
+  return 'audio/mpeg';  // default to mp3
+}
+
 async function playNext(){
   if(playing||aQ.length===0)return;
   playing=true;agSpk=true;setStat('SPEAKING...','color:var(--gr)');$('mBtn').className='mb sp';
   while(aQ.length>0){
-    const{b64}=aQ.shift();const isW=b64.startsWith('UklG');
-    curA=new Audio(`data:${isW?'audio/wav':'audio/mp3'};base64,${b64}`);
-    await new Promise(r=>{curA.onended=r;curA.onerror=r;curA.play().catch(r);});
+    const{b64}=aQ.shift();
+    const mime=getAudioMime(b64);
+    curA=new Audio(`data:${mime};base64,${b64}`);
+    curA.volume=1.0;
+    const playOk = await curA.play().then(()=>true).catch(err=>{
+      console.warn('Audio play failed:',err.message);
+      return false;
+    });
+    if(playOk){
+      await new Promise(r=>{curA.onended=r;curA.onerror=r;});
+    }
     if(!agSpk)break;
   }
-  playing=false;agSpk=false;aQ=[];$('mBtn').className='mb';startListen();
+  playing=false;agSpk=false;aQ=[];$('mBtn').className='mb';
+  if(ws&&ws.readyState===WebSocket.OPEN)startListen();
 }
 
 function stopAudio(){if(curA){curA.pause();curA=null;}aQ=[];playing=false;agSpk=false;$('mBtn').className='mb';sr();}
@@ -311,26 +331,43 @@ function detSilence(){
   if(!rec||rec.state!=='recording')return;
   const buf=new Uint8Array(analy.frequencyBinCount);analy.getByteFrequencyData(buf);
   const avg=buf.reduce((a,b)=>a+b,0)/buf.length;
-  if(avg>18){
+  if(avg>12){
     if(agSpk){stopAudio();if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'interrupt'}));addChat('Sys','⚡ Interrupted');}
     clearTimeout(sTimer);
     sTimer=setTimeout(()=>{
       if(rec&&rec.state==='recording'){t0=performance.now();rec.stop();$('mBtn').className='mb';sr();setStat('PROCESSING...','color:var(--ye)');}
-    },900);
+    },600);
   }
   requestAnimationFrame(detSilence);
 }
 
 function startCall(){
   if(!agentId){alert('Deploy an agent first!');return;}
+  // Unlock AudioContext on user gesture (required by browsers for autoplay)
+  if(!actx){
+    actx=new AudioContext();
+  }
+  if(actx&&actx.state==='suspended'){
+    actx.resume().then(()=>console.log('AudioContext unlocked'));
+  }
+  // Also unlock with a silent buffer trick for maximum compatibility
+  try{
+    const silent=actx.createBuffer(1,1,22050);
+    const src2=actx.createBufferSource();
+    src2.buffer=silent;src2.connect(actx.destination);src2.start();
+  }catch(e){}
   ws=new WebSocket(`${WS}://${HOST}/ws/${agentId}`);
   ws.onopen=()=>{$('sBtn').style.display='none';$('eBtn').style.display='flex';ws.send(JSON.stringify({type:'start_call'}));};
   ws.onmessage=ev=>{
     const m=JSON.parse(ev.data);
     if(m.type==='user_message'){addChat('You',m.text);setStat('THINKING...','color:var(--ye)');turns++;$('sT').innerText=turns;$('sL').innerText=Math.round(performance.now()-t0)+'ms';}
     else if(m.type==='agent_message'){
-      if(m.is_first||m.is_first===undefined){addChat('Agent',m.text);$('sLg').innerText=/[\u0600-\u06FF]/.test(m.text)?'🇸🇦 AR':'🇬🇧 EN';}
-      if(m.audio){aQ.push({b64:m.audio});playNext();}
+      if(m.is_first||m.is_first===undefined){addChat('Agent',m.text);$('sLg').innerText=/[\u0600-\u06FF]/.test(m.text)?'AR':'EN';}
+      if(m.audio){
+        console.log('Audio received, length:',m.audio.length,'mime:',getAudioMime(m.audio));
+        aQ.push({b64:m.audio});playNext();
+      }
+      else{console.warn('No audio in message');if(!playing)startListen();}
     }
   };
   ws.onerror=()=>setStat('❌ WS ERROR','color:var(--re)');
